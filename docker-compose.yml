@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql
+    restart: always
+    environment:
+      SA_PASSWORD: "P@ssw0rd123!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_TCP_PORT: "1433"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build: .
+    container_name: node-app
+    restart: always
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      DB_HOST: "mssql"
+      DB_USER: "sa"
+      DB_PASS: "P@ssw0rd123!"
+      DB_NAME: "rbac_db"
+      DB_PORT: "1433"
+      JWT_SECRET: "your_secret_key"
+      NODE_ENV: "development"
+    ports:
+      - "8800:8800"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["npm", "run", "dev"]
+
+volumes:
+  mssql-data:
